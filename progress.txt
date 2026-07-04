@@ -8,7 +8,11 @@ Authentication Block          COMPLEATED !
 - createEmployee() function for hr , to create an employe password and empid using email , name etc   DONE  
 - should send out an email to the employee containing the temp password , and loggin in should redirect to /change-password route  DONE
 
-- Frontend -> Authentication Page, HomePage, redirect etc with styling    DONE
+- Frontend -> Authentication Page, HomePage, redirect etc with styling    DONE 
 
+ Database Block 
+- basic schema and roles for each employee and user       DONE 
+- Craete a company database storing each employee[] and hr[]
+- database should be like Employee [ employeeId connected to Employee Database , present or not in office  employeeId connected to Employee Database , present or not in office ]
 
 
