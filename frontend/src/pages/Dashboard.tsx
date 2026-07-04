@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [currentStatus, setCurrentStatus] = useState<(typeof STATUS_OPTIONS)[number]>(STATUS_OPTIONS[3]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [myRole, setMyRole] = useState("");
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
@@ -77,6 +78,7 @@ export default function Dashboard() {
         if (res.ok) {
           const data = await res.json();
           setMyUserId(Number(data.user.userId));
+          setMyRole(data.user.role);
         }
       } catch {
         // ignore
@@ -237,6 +239,17 @@ export default function Dashboard() {
               <div className="my-1 border-t border-gray-100" />
               <button
                 type="button"
+                onClick={() => { setStatusOpen(false); navigate("/profile"); }}
+                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-odoo-ink transition hover:bg-odoo-cream"
+              >
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Profile
+              </button>
+              <button
+                type="button"
                 onClick={handleLogout}
                 className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
               >
@@ -288,7 +301,7 @@ export default function Dashboard() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {employees.map((employee) => (
-              <EmployeeCard key={employee.id} employee={employee} />
+              <EmployeeCard key={employee.id} employee={employee} isHr={myRole === "hr" || myRole === "admin"} />
             ))}
           </div>
         )}
@@ -423,11 +436,15 @@ export default function Dashboard() {
   );
 }
 
-function EmployeeCard({ employee }: { employee: Employee }) {
+function EmployeeCard({ employee, isHr }: { employee: Employee; isHr: boolean }) {
+  const navigate = useNavigate();
   const sc = STATUS_COLORS[employee.status] ?? STATUS_COLORS.absent;
 
   return (
-    <div className="group rounded-2xl bg-gradient-to-br from-white via-[#fcf8f5] to-[#f5ebf4] p-5 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-lg">
+    <div
+      onClick={() => isHr && navigate(`/profile/${employee.employee_id}`)}
+      className={`group rounded-2xl bg-gradient-to-br from-white via-[#fcf8f5] to-[#f5ebf4] p-5 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-lg ${isHr ? "cursor-pointer" : ""}`}
+    >
       <div className="flex items-center gap-4">
         <img src={PROFILE_PIC} alt={employee.name} className="h-14 w-14 shrink-0 rounded-xl object-cover ring-2 ring-odoo-purple/10" />
         <div className="min-w-0 flex-1">

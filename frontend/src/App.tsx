@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
 import GetStarted from './pages/GetStarted'
 import Login from './pages/Login'
+import Profile from './pages/Profile'
 
 function App() {
   return (
@@ -14,6 +15,8 @@ function App() {
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/getstarted" element={<GetStarted />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/profile" element={<Profile />} />
+      <Route path="/profile/:employee_id" element={<Profile />} />
     </Routes>
   )
 }
