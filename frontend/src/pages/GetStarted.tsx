@@ -46,10 +46,10 @@ export default function Register() {
   }
 
   return (
-    <main className="min-h-screen bg-odoo-cream flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl rounded-[2rem] bg-white p-10 shadow-2xl shadow-odoo-purple/10 ring-1 ring-black/5">
+    <main className="flex min-h-screen items-center justify-center bg-odoo-cream px-4 py-8 sm:px-6">
+      <div className="w-full max-w-2xl rounded-[2rem] bg-white p-6 shadow-2xl shadow-odoo-purple/10 ring-1 ring-black/5 sm:p-8 md:p-10">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-semibold text-odoo-purple">
+          <h1 className="text-3xl font-semibold text-odoo-purple sm:text-4xl">
             Create Employee Account
           </h1>
 
@@ -80,6 +80,7 @@ export default function Register() {
             disabled={loading}
             className="
               mt-4
+              w-full
               rounded-xl
               bg-odoo-purple
               py-3

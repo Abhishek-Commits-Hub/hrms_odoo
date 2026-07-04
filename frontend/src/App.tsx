@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
 
 import GetStarted from './pages/GetStarted'
@@ -10,6 +11,36 @@ function App() {
       <Route path="/getstarted" element={<GetStarted />} />
       <Route path="/login" element={<Login />} />
     </Routes>
+  )
+}
+
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    const toggleVisibility = () => {
+      setVisible(window.scrollY > 400)
+    }
+
+    toggleVisibility()
+    window.addEventListener('scroll', toggleVisibility)
+    return () => window.removeEventListener('scroll', toggleVisibility)
+  }, [])
+
+  if (!visible) return null
+
+  return (
+    <button
+      type="button"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="fixed bottom-5 right-5 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-gradient-to-br from-odoo-purple to-odoo-purple-dark text-lg font-semibold text-white shadow-[0_10px_30px_rgba(113,75,103,0.35)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_14px_35px_rgba(113,75,103,0.4)]"
+      aria-label="Back to top"
+    >
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5" />
+        <path d="m5 12 7-7 7 7" />
+      </svg>
+    </button>
   )
 }
 
@@ -107,20 +138,21 @@ function Home() {
 
   return (
     <main className="min-h-screen bg-odoo-cream text-odoo-ink">
+      <ScrollToTopButton />
       {/* Nav */}
-      <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 lg:px-8">
-        <div className="flex items-center gap-2">
+      <nav className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+        <div className="flex items-center justify-center gap-2 sm:justify-start">
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-odoo-purple text-sm font-bold text-white">PF</span>
           <span className="text-2xl font-semibold tracking-tight text-odoo-purple">PeopleFlow</span>
         </div>
-        <div className="hidden items-center gap-8 text-sm font-medium text-odoo-muted md:flex">
+        <div className="flex items-center justify-center gap-6 text-sm font-medium text-odoo-muted sm:gap-8">
           <a className="transition hover:text-odoo-purple" href="#modules">Modules</a>
           <a className="transition hover:text-odoo-purple" href="#workflow">Approvals</a>
           <a className="transition hover:text-odoo-purple" href="#access">Access</a>
         </div>
         <Link
           to="/getstarted"
-          className="rounded-full bg-odoo-purple px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-odoo-purple/30 transition hover:bg-odoo-purple-dark"
+          className="mx-auto rounded-full bg-odoo-purple px-5 py-2 text-sm font-semibold text-white shadow-sm shadow-odoo-purple/30 transition hover:bg-odoo-purple-dark sm:mx-0"
         >
           Get Started
         </Link>
@@ -131,39 +163,39 @@ function Home() {
         <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-odoo-teal/15 blur-3xl" />
         <div className="pointer-events-none absolute -right-16 top-40 h-80 w-80 rounded-full bg-odoo-purple/10 blur-3xl" />
 
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-6 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-20">
-          <div>
+        <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12 lg:px-8 lg:py-20">
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-none lg:text-left">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-odoo-teal shadow-sm ring-1 ring-black/5">
               <span className="h-1.5 w-1.5 rounded-full bg-odoo-teal" />
               Human Resources Suite
             </p>
-            <h1 className="max-w-3xl text-5xl font-semibold leading-tight tracking-tight text-odoo-purple md:text-6xl">
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-odoo-purple sm:text-5xl md:text-6xl">
               Every workday, perfectly aligned.
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-odoo-muted">
+            <p className="mt-6 text-base leading-8 text-odoo-muted sm:text-lg">
               PeopleFlow digitizes onboarding, attendance, leave and payroll visibility into
               one role-based workspace — so Admins approve in a click and employees always
               know exactly where their request stands.
             </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <button className="rounded-lg bg-odoo-teal px-6 py-3 font-semibold text-white shadow-sm shadow-odoo-teal/30 transition hover:bg-teal-600">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
+              <button className="w-full rounded-lg bg-gradient-to-r from-odoo-teal to-cyan-500 px-6 py-3 font-semibold text-white shadow-sm shadow-odoo-teal/30 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-odoo-teal/25 active:scale-[0.97] sm:w-auto">
                 Generate credentials
               </button>
-              <button className="rounded-lg bg-white px-6 py-3 font-semibold text-odoo-purple shadow-sm ring-1 ring-black/10 transition hover:bg-purple-50">
+              <button className="w-full rounded-lg bg-gradient-to-r from-white to-purple-50 px-6 py-3 font-semibold text-odoo-purple shadow-sm ring-1 ring-black/10 transition duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-odoo-purple/10 active:scale-[0.97] sm:w-auto">
                 View employees
               </button>
             </div>
 
-            <dl className="mt-12 grid max-w-md grid-cols-3 gap-6 border-t border-odoo-purple/10 pt-6">
-              <div>
+            <dl className="mt-10 mx-auto flex w-full max-w-xl flex-wrap items-stretch justify-center gap-3 border-t border-odoo-purple/10 pt-6 sm:flex-nowrap">
+              <div className="card-hover flex min-w-[140px] flex-1 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-white/90 via-white/80 to-odoo-purple/10 px-2 py-3 text-center shadow-sm ring-1 ring-black/5 sm:min-w-0 sm:px-3">
                 <dt className="text-2xl font-semibold text-odoo-purple">2</dt>
                 <dd className="text-sm text-odoo-muted">Access tiers</dd>
               </div>
-              <div>
+              <div className="card-hover flex min-w-[140px] flex-1 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-white/90 via-white/80 to-odoo-teal/10 px-2 py-3 text-center shadow-sm ring-1 ring-black/5 sm:min-w-0 sm:px-3">
                 <dt className="text-2xl font-semibold text-odoo-purple">4</dt>
                 <dd className="text-sm text-odoo-muted">Attendance states</dd>
               </div>
-              <div>
+              <div className="card-hover flex min-w-[140px] flex-1 flex-col items-center justify-center rounded-2xl bg-gradient-to-br from-white/90 via-white/80 to-amber-100/80 px-2 py-3 text-center shadow-sm ring-1 ring-black/5 sm:min-w-0 sm:px-3">
                 <dt className="text-2xl font-semibold text-odoo-purple">3</dt>
                 <dd className="text-sm text-odoo-muted">Leave types</dd>
               </div>
@@ -171,7 +203,7 @@ function Home() {
           </div>
 
           {/* Dashboard mockup */}
-          <div className="rounded-[2rem] bg-white p-5 shadow-2xl shadow-odoo-purple/10 ring-1 ring-black/5">
+          <div className="mx-auto w-full max-w-xl rounded-[2rem] bg-white p-4 shadow-2xl shadow-odoo-purple/10 ring-1 ring-black/5 sm:p-5 lg:mx-0">
             <div className="rounded-[1.5rem] bg-gradient-to-br from-odoo-purple to-odoo-purple-dark p-6 text-white">
               <div className="flex items-center justify-between">
                 <div>
@@ -224,7 +256,7 @@ function Home() {
 
       {/* Modules grid */}
       <section className="mx-auto max-w-7xl px-6 pb-6 pt-4 lg:px-8">
-        <div className="max-w-2xl">
+        <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:text-left">
           <p className="text-sm font-semibold uppercase tracking-wide text-odoo-teal">Everything in one workspace</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-odoo-purple md:text-4xl">
             Built for both sides of the org chart.
@@ -239,9 +271,9 @@ function Home() {
           {modules.map(({ name, icon: Icon, copy }) => (
             <div
               key={name}
-              className="group rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-lg"
+              className="card-hover group rounded-2xl bg-gradient-to-br from-white via-[#fcf8f5] to-[#f5ebf4] p-6 shadow-sm ring-1 ring-black/5"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-odoo-cream text-odoo-purple transition group-hover:bg-odoo-purple group-hover:text-white">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-gradient-to-br from-odoo-cream to-white text-odoo-purple transition duration-300 group-hover:bg-gradient-to-br group-hover:from-odoo-purple group-hover:to-odoo-purple-dark group-hover:text-white">
                 <Icon className="h-5 w-5" />
               </span>
               <h3 className="mt-4 font-semibold text-odoo-ink">{name}</h3>
@@ -253,8 +285,8 @@ function Home() {
 
       {/* Approval workflow */}
       <section id="workflow" className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
-        <div className="grid gap-10 rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5 lg:grid-cols-[0.8fr_1.2fr] lg:p-12">
-          <div>
+        <div className="grid gap-10 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-black/5 sm:p-8 lg:grid-cols-[0.8fr_1.2fr] lg:p-12">
+          <div className="text-center lg:text-left">
             <p className="text-sm font-semibold uppercase tracking-wide text-odoo-teal">How a request moves</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-odoo-purple">
               From calendar tap to closed record.
@@ -266,7 +298,7 @@ function Home() {
           </div>
           <ol className="grid gap-6 sm:grid-cols-3">
             {steps.map(({ step, title, detail }) => (
-              <li key={step} className="relative rounded-2xl bg-odoo-cream p-5">
+              <li key={step} className="card-hover relative rounded-2xl bg-gradient-to-br from-odoo-cream via-white to-[#f7ecf4] p-5">
                 <span className="text-sm font-semibold text-odoo-teal">{step}</span>
                 <h3 className="mt-2 font-semibold text-odoo-purple">{title}</h3>
                 <p className="mt-2 text-sm leading-6 text-odoo-muted">{detail}</p>
@@ -279,7 +311,7 @@ function Home() {
       {/* Access / roles */}
       <section id="access" className="mx-auto max-w-7xl px-6 pb-20 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl bg-odoo-purple p-8 text-white">
+          <div className="card-hover rounded-3xl bg-gradient-to-br from-odoo-purple via-[#7a4d6b] to-[#9b5d7a] p-6 text-white sm:p-8">
             <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">Admin / HR Officer</span>
             <h3 className="mt-4 text-2xl font-semibold">Manage, approve, pay.</h3>
             <p className="mt-3 text-white/75">
@@ -287,7 +319,7 @@ function Home() {
               comments, and control over every salary structure.
             </p>
           </div>
-          <div className="rounded-3xl bg-white p-8 shadow-sm ring-1 ring-black/5">
+          <div className="card-hover rounded-3xl bg-gradient-to-br from-white via-[#fcf8f5] to-[#f5ebf4] p-6 shadow-sm ring-1 ring-black/5 sm:p-8">
             <span className="rounded-full bg-odoo-cream px-3 py-1 text-xs font-semibold text-odoo-purple">Employee</span>
             <h3 className="mt-4 text-2xl font-semibold text-odoo-ink">View, apply, track.</h3>
             <p className="mt-3 text-odoo-muted">
@@ -297,7 +329,7 @@ function Home() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-3xl bg-odoo-teal/10 p-8 text-center sm:flex-row sm:text-left">
+        <div className="mt-10 flex flex-col items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-odoo-teal/15 via-white to-odoo-purple/10 p-6 text-center shadow-sm ring-1 ring-black/5 sm:flex-row sm:p-8 sm:text-left">
           <div>
             <h3 className="text-xl font-semibold text-odoo-purple">Ready to bring HR into one place?</h3>
             <p className="mt-1 text-odoo-muted">Set up roles, invite your team, and let approvals run themselves.</p>
