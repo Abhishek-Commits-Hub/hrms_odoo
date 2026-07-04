@@ -16,17 +16,11 @@ router.get("/", authenticateJwt, async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      "SELECT name, employee_id, status FROM users WHERE company_name = $1",
+      "SELECT id, name, email, phone, employee_id, role, status FROM users WHERE company_name = $1",
       [req.user.companyName],
     );
 
-    res.json({
-      employees: result.rows.map((row) => ({
-        name: row.name,
-        employee_id: row.employee_id,
-        status: row.status,
-      })),
-    });
+    res.json({ employees: result.rows });
   } catch (error) {
     console.error("Error fetching employees:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -39,10 +33,20 @@ router.patch("/status", authenticateJwt, async (req: AuthRequest, res: Response)
       return res.status(401).json({ message: "Invalid token" });
     }
 
-    const { status } = req.body as { status?: string };
-    const VALID_STATUSES = ["present", "absent", "halfday", "leave"];
+    let { status } = req.body as { status?: string };
+    const VALID_STATUSES = ["present", "absent", "halfday", "half_day", "leave"];
 
-    if (!status || !VALID_STATUSES.includes(status)) {
+    if (!status) {
+      return res.status(400).json({
+        message: `Status is required. Must be one of: ${VALID_STATUSES.join(", ")}`,
+      });
+    }
+
+    if (status === "half_day") {
+      status = "halfday";
+    }
+
+    if (!VALID_STATUSES.includes(status)) {
       return res.status(400).json({
         message: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`,
       });

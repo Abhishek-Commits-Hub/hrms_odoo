@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Cookies from "js-cookie";
 import { Navigate, useNavigate } from "react-router-dom";
 
@@ -6,12 +6,36 @@ const PROFILE_PIC = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profil
 
 const STATUS_OPTIONS = [
   { value: "present", label: "Present", color: "#166534", bg: "#dcfce7" },
-  { value: "half_day", label: "Half Day", color: "#92400e", bg: "#fef3c7" },
+  { value: "halfday", label: "Half Day", color: "#92400e", bg: "#fef3c7" },
   { value: "leave", label: "Leave", color: "#1e40af", bg: "#dbeafe" },
   { value: "absent", label: "Absent", color: "#991b1b", bg: "#fee2e2" },
 ] as const;
 
+type StatusValue = (typeof STATUS_OPTIONS)[number]["value"];
+
+const STATUS_COLORS: Record<StatusValue, { color: string; bg: string }> = {
+  present: { color: "#166534", bg: "#dcfce7" },
+  halfday: { color: "#92400e", bg: "#fef3c7" },
+  leave: { color: "#1e40af", bg: "#dbeafe" },
+  absent: { color: "#991b1b", bg: "#fee2e2" },
+};
+
 const BASE_URL = import.meta.env.VITE_API_URL;
+
+type Employee = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  employee_id: string;
+  role: string;
+  status: StatusValue;
+};
+
+function authHeaders(): Record<string, string> {
+  const token = Cookies.get("token");
+  return token ? { Authorization: `Bearer ${token}`, "Content-Type": "application/json" } : {};
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,18 +45,58 @@ export default function Dashboard() {
   }
 
   const [statusOpen, setStatusOpen] = useState(false);
-  const [currentStatus, setCurrentStatus] = useState<(typeof STATUS_OPTIONS)[number]>(STATUS_OPTIONS[0]);
+  const [currentStatus, setCurrentStatus] = useState<(typeof STATUS_OPTIONS)[number]>(STATUS_OPTIONS[3]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [modalResult, setModalResult] = useState<{ employee_id: string; password: string } | null>(null);
+  const [modalError, setModalError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  async function handleLogout() {
+  const fetchEmployees = useCallback(async () => {
     try {
-      await fetch(`${BASE_URL}/auth/logout`, { method: "POST" });
-    } catch {
-      // ignore
+      const res = await fetch(`${BASE_URL}/employee`, { headers: authHeaders() });
+      const data = await res.json();
+      if (data.employees) {
+        setEmployees(data.employees);
+      }
+    } catch (err) {
+      console.error("Failed to fetch employees", err);
+    } finally {
+      setLoading(false);
     }
-    Cookies.remove("token");
-    navigate("/login");
-  }
+  }, []);
+
+  useEffect(() => {
+    async function fetchMe() {
+      try {
+        const res = await fetch(`${BASE_URL}/auth/me`, { headers: authHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          setMyUserId(Number(data.user.userId));
+        }
+      } catch {
+        // ignore
+      }
+    }
+    fetchMe();
+  }, []);
+
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
+
+  useEffect(() => {
+    if (myUserId != null && employees.length) {
+      const me = employees.find((e) => e.id === myUserId);
+      if (me) {
+        const match = STATUS_OPTIONS.find((o) => o.value === me.status);
+        if (match) setCurrentStatus(match);
+      }
+    }
+  }, [myUserId, employees]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -44,12 +108,73 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const employees = Array.from({ length: 9 }, (_, i) => ({
-    id: i,
-    name: `Employee ${i + 1}`,
-    role: ["Software Engineer", "Designer", "Product Manager"][i % 3],
-    status: ["present", "absent", "leave"][i % 3] as "present" | "absent" | "leave",
-  }));
+  async function handleLogout() {
+    try {
+      await fetch(`${BASE_URL}/auth/logout`, { method: "POST" });
+    } catch {
+      // ignore
+    }
+    Cookies.remove("token");
+    navigate("/login");
+  }
+
+  async function handleStatusChange(option: (typeof STATUS_OPTIONS)[number]) {
+    setCurrentStatus(option);
+    setStatusOpen(false);
+
+    try {
+      const res = await fetch(`${BASE_URL}/employee/status`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify({ status: option.value }),
+      });
+
+      if (res.ok) {
+        await fetchEmployees();
+      }
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  }
+
+  async function handleCreateEmployee(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setModalLoading(true);
+    setModalError("");
+
+    const form = new FormData(e.currentTarget);
+    const body = {
+      name: (form.get("name") as string).trim(),
+      email: ((form.get("email") as string).trim()).toLowerCase(),
+      phone: (form.get("phone") as string).trim(),
+      role: (form.get("role") as string).trim().toLowerCase(),
+    };
+
+    try {
+      const res = await fetch(`${BASE_URL}/admin/genereateEmployeeCredentials`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        setModalResult(data.credentials);
+        e.currentTarget.reset();
+        await fetchEmployees();
+      } else {
+        setModalError(data.message || "Failed to create employee");
+      }
+    } catch {
+      setModalError("Network error");
+    } finally {
+      setModalLoading(false);
+    }
+  }
+
+  const presentCount = employees.filter((e) => e.status === "present").length;
+  const absentCount = employees.filter((e) => e.status === "absent").length;
+  const leaveCount = employees.filter((e) => e.status === "leave").length;
 
   return (
     <main className="min-h-screen bg-odoo-cream text-odoo-ink">
@@ -96,10 +221,7 @@ export default function Dashboard() {
                 <button
                   key={option.value}
                   type="button"
-                  onClick={() => {
-                    setCurrentStatus(option);
-                    setStatusOpen(false);
-                  }}
+                  onClick={() => handleStatusChange(option)}
                   className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-odoo-ink transition hover:bg-odoo-cream"
                 >
                   <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: option.bg }} />
@@ -133,10 +255,10 @@ export default function Dashboard() {
       <section id="overview" className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { label: "Total Employees", value: "248", change: "+12 this month" },
-            { label: "Present Today", value: "214", change: "86%" },
-            { label: "On Leave", value: "18", change: "7 pending" },
-            { label: "Pending Approvals", value: "9", change: "3 overdue" },
+            { label: "Total Employees", value: employees.length.toString(), change: `${employees.length} registered` },
+            { label: "Present Today", value: presentCount.toString(), change: `${Math.round((presentCount / (employees.length || 1)) * 100)}%` },
+            { label: "On Leave", value: leaveCount.toString(), change: `${leaveCount} total` },
+            { label: "Absent", value: absentCount.toString(), change: `${absentCount} total` },
           ].map((stat) => (
             <div key={stat.label} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-lg">
               <p className="text-sm text-odoo-muted">{stat.label}</p>
@@ -151,28 +273,130 @@ export default function Dashboard() {
       <section id="employees" className="relative mx-auto mt-10 max-w-7xl px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-2xl font-semibold tracking-tight text-odoo-purple">Employee Overview</h2>
-          <button className="rounded-lg bg-gradient-to-r from-odoo-teal to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-odoo-teal/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-odoo-teal/25 active:scale-[0.97]">
+          <button
+            type="button"
+            onClick={() => { setModalOpen(true); setModalResult(null); setModalError(""); }}
+            className="rounded-lg bg-gradient-to-r from-odoo-teal to-cyan-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm shadow-odoo-teal/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-odoo-teal/25 active:scale-[0.97]"
+          >
             + New Employee
           </button>
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {employees.map((employee) => (
-            <EmployeeCard key={employee.id} employee={employee} />
-          ))}
-        </div>
+        {loading ? (
+          <p className="text-center text-odoo-muted">Loading employees…</p>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {employees.map((employee) => (
+              <EmployeeCard key={employee.id} employee={employee} />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Footer */}
       <footer className="relative mx-auto mt-14 max-w-7xl border-t border-odoo-purple/10 px-6 py-8 text-center text-sm text-odoo-muted lg:px-8">
         PeopleFlow — Human Resource Management System
       </footer>
+
+      {/* Add Employee Modal */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 sm:p-8">
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-odoo-purple">
+                {modalResult ? "Employee Created" : "Add Employee"}
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setModalOpen(false); setModalResult(null); }}
+                className="rounded-lg p-1 text-odoo-muted transition hover:bg-gray-100 hover:text-odoo-ink"
+              >
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 6 6 18M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {modalResult ? (
+              <div className="space-y-4">
+                <div className="rounded-xl bg-odoo-cream p-4">
+                  <p className="text-sm font-medium text-odoo-muted">Employee ID</p>
+                  <p className="mt-1 text-lg font-semibold text-odoo-ink">{modalResult.employee_id}</p>
+                  <p className="mt-3 text-sm font-medium text-odoo-muted">Password</p>
+                  <p className="mt-1 font-mono text-lg font-semibold text-odoo-teal">{modalResult.password}</p>
+                </div>
+                <p className="text-xs text-odoo-muted">Share these credentials with the employee.</p>
+                <button
+                  type="button"
+                  onClick={() => { setModalOpen(false); setModalResult(null); }}
+                  className="w-full rounded-xl bg-odoo-purple py-3 font-semibold text-white transition hover:bg-odoo-purple-dark"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateEmployee} className="grid gap-4">
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-odoo-ink">Full Name</label>
+                  <input
+                    name="name"
+                    required
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-odoo-purple focus:ring-2 focus:ring-odoo-purple/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-odoo-ink">Email</label>
+                  <input
+                    name="email"
+                    type="email"
+                    required
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-odoo-purple focus:ring-2 focus:ring-odoo-purple/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-odoo-ink">Phone</label>
+                  <input
+                    name="phone"
+                    type="tel"
+                    required
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-odoo-purple focus:ring-2 focus:ring-odoo-purple/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium text-odoo-ink">Role</label>
+                  <select
+                    name="role"
+                    required
+                    className="w-full rounded-xl border border-gray-200 px-4 py-2.5 outline-none transition focus:border-odoo-purple focus:ring-2 focus:ring-odoo-purple/20"
+                  >
+                    <option value="employee">Employee</option>
+                    <option value="hr">HR</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                {modalError && (
+                  <p className="rounded-xl bg-red-50 px-4 py-2 text-sm text-red-600">{modalError}</p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={modalLoading}
+                  className="w-full rounded-xl bg-gradient-to-r from-odoo-teal to-cyan-500 py-3 font-semibold text-white shadow-sm shadow-odoo-teal/30 transition hover:-translate-y-0.5 hover:shadow-lg hover:shadow-odoo-teal/25 active:scale-[0.97] disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  {modalLoading ? "Creating…" : "Create Employee"}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-function EmployeeCard({ employee }: { employee: { name: string; role: string; status: "present" | "absent" | "leave" } }) {
-  const statusLabel = { present: "Present", absent: "Absent", leave: "Leave" }[employee.status];
+function EmployeeCard({ employee }: { employee: Employee }) {
+  const sc = STATUS_COLORS[employee.status] ?? STATUS_COLORS.absent;
 
   return (
     <div className="group rounded-2xl bg-gradient-to-br from-white via-[#fcf8f5] to-[#f5ebf4] p-5 shadow-sm ring-1 ring-black/5 transition hover:-translate-y-1 hover:shadow-lg">
@@ -181,15 +405,16 @@ function EmployeeCard({ employee }: { employee: { name: string; role: string; st
         <div className="min-w-0 flex-1">
           <h3 className="truncate font-semibold text-odoo-ink">{employee.name}</h3>
           <p className="truncate text-sm text-odoo-muted">{employee.role}</p>
+          <p className="truncate text-xs text-odoo-muted/60">{employee.employee_id}</p>
         </div>
         <span
           className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold"
           style={{
-            backgroundColor: employee.status === "present" ? "#dcfce7" : employee.status === "absent" ? "#fef3c7" : "#dbeafe",
-            color: employee.status === "present" ? "#166534" : employee.status === "absent" ? "#92400e" : "#1e40af",
+            backgroundColor: sc.bg,
+            color: sc.color,
           }}
         >
-          {statusLabel}
+          {STATUS_OPTIONS.find((o) => o.value === employee.status)?.label ?? "Absent"}
         </span>
       </div>
     </div>

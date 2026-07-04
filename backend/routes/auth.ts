@@ -46,9 +46,14 @@ export async function initAuthSchema() {
       employee_id VARCHAR(32) UNIQUE,
       role VARCHAR(16) NOT NULL,
       password_hash TEXT NOT NULL,
+      status VARCHAR(16) NOT NULL DEFAULT 'absent',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(16) NOT NULL DEFAULT 'absent';
   `);
 }
 

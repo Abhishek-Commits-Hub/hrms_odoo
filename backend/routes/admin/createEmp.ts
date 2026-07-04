@@ -70,11 +70,11 @@ router.post(
 
       const result = await pool.query(
         `
-          INSERT INTO users (company_name, name, email, phone, employee_id, role, password_hash)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-          RETURNING id, company_name, name, email, phone, employee_id, role, created_at;
+          INSERT INTO users (company_name, name, email, phone, employee_id, role, password_hash, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING id, company_name, name, email, phone, employee_id, role, status, created_at;
         `,
-        [companyName, name, email, phone, employeeId, role, passwordHash],
+        [companyName, name, email, phone, employeeId, role, passwordHash, "absent"],
       );
 
       return res.status(201).json({
@@ -82,6 +82,7 @@ router.post(
         user: result.rows[0],
         credentials: {
           employee_id: employeeId,
+          password,
         },
       });
     } catch (error) {
