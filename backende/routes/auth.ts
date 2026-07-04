@@ -45,8 +45,6 @@ export async function initAuthSchema() {
       phone VARCHAR(32) NOT NULL,
       employee_id VARCHAR(32) UNIQUE,
       role VARCHAR(16) NOT NULL,
-      status VARCHAR(16) NOT NULL DEFAULT 'absent'
-        CHECK (status IN ('present', 'absent', 'halfday', 'leave')),
       password_hash TEXT NOT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -247,6 +245,10 @@ router.post(
 
 router.get("/me", authenticateJwt, (req: AuthRequest, res) => {
   res.json({ user: req.user });
+});
+
+router.post("/logout", (_req, res) => {
+  res.json({ message: "Logged out successfully" });
 });
 
 export { authenticateJwt };
