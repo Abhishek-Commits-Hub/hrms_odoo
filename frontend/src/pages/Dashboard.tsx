@@ -1,5 +1,12 @@
+import Cookies from "js-cookie";
+import { Navigate } from "react-router-dom";
 
 export default function Dashboard() {
+  const token = Cookies.get("token");
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   const employees = Array.from({ length: 9 }, (_, i) => ({
     id: i,
     name: `Employee ${i + 1}`,
