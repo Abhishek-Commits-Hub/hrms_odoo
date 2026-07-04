@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Link, Route, Routes } from 'react-router-dom'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
+import Cookies from 'js-cookie'
 
 import Dashboard from './pages/Dashboard'
 import Home from './pages/Home'
@@ -100,6 +101,11 @@ function IconCheckBadge(props: React.SVGProps<SVGSVGElement>) {
 }
 
 function Home() {
+  const token = Cookies.get("token");
+  if (token) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const modules = [
     {
       name: 'Access & Identity',

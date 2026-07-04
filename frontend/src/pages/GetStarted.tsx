@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -30,9 +31,9 @@ export default function Register() {
       });
 
       const data = await res.json();
-      console.log("Register response:", data);
 
       if (res.ok) {
+        Cookies.set("token", data.token, { expires: 7, secure: true, sameSite: "strict" });
         navigate("/dashboard");
       } else {
         alert(data.message);
